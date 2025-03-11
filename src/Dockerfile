@@ -11,10 +11,10 @@ EXPOSE 8080
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
-COPY ["HttpInference/HttpInference.csproj", "HttpInference/"]
-RUN dotnet restore "./HttpInference/HttpInference.csproj"
+COPY ["src/HttpInference.csproj", "src/"]
+RUN dotnet restore "./src/HttpInference.csproj"
 COPY . .
-WORKDIR "/src/HttpInference"
+WORKDIR "/src/src"
 RUN dotnet build "./HttpInference.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
 # This stage is used to publish the service project to be copied to the final stage
