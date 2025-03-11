@@ -398,3 +398,6 @@ FodyWeavers.xsd
 
 # JetBrains Rider
 *.sln.iml
+/HttpInference/HttpInference/Properties/launchSettings.json
+/tests/test.http
+/src/Properties/launchSettings.json
