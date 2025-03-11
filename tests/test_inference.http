@@ -1,0 +1,15 @@
+GET http://localhost:5005/inference/models
+
+###
+
+POST http://localhost:5005/inference/models/GPT4OMINI
+Content-Type: application/json
+
+{
+  "ImageId": "",
+  "SystemPrompt": "You are an AI assistant that helps people find information.",
+  "Text": "Tell me about this image",
+  "Temperature": 0,
+  "TopP": 0.1,
+  "MaxTokens": 2048
+}
