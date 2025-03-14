@@ -9,7 +9,7 @@ namespace HttpInference.Services;
 public class Inference(IHttpClientFactory httpClientFactory, ILogger<Inference> logger)
 {
     private readonly string route = $"{Environment.GetEnvironmentVariable("FILE_SYSTEM_API")!}/storage/files/object?path={Environment.GetEnvironmentVariable("FILE_SYSTEM_PATH")!}";
-
+    private readonly string route_no_path = $"{Environment.GetEnvironmentVariable("FILE_SYSTEM_API")!}/storage/files/object?path=";
     private const string KEY_PREFIX = "AZKEY_";
     private static readonly ConcurrentDictionary<string, ChatCompletionsClient> clients = [];
     static Inference()
@@ -40,20 +40,20 @@ public class Inference(IHttpClientFactory httpClientFactory, ILogger<Inference> 
 
     public async Task<Result<QueryResponse>> QueryAsync(string key, Query query)
     {
-        if (query.Text is null && query.ImageId is null)
+        if (query.Text is null && query.ImageId is null && query.ImageRouteId is null)
         {
-            return new Result<QueryResponse>(false, "Either Text or ImageId must be provided", default);
+            return new Result<QueryResponse>(false, "Either Text or ImageId or ImageRouteId must be provided", default);
         }
 
 
         BinaryData imageData;
-        if (query.ImageId is not null)
+        if (query.ImageId is not null || query.ImageRouteId is not null)
         {
             // pull image from storage
             var http = httpClientFactory.CreateClient(Constants.FileSystemClient);
             try
             {
-                var bytes = await http.GetByteArrayAsync($"{route}/{query.ImageId}");
+                var bytes = await http.GetByteArrayAsync(query.ImageRouteId is not null ? $"{route_no_path}{query.ImageRouteId}" : $"{route}/{query.ImageId}");
                 imageData = BinaryData.FromBytes(bytes);
             }
             catch (Exception e)
@@ -81,12 +81,17 @@ public class Inference(IHttpClientFactory httpClientFactory, ILogger<Inference> 
             {
                 MaxTokens = query.MaxTokens,
                 Temperature = query.Temperature,
-                NucleusSamplingFactor = query.TopP,
                 Messages = [
                     new ChatRequestSystemMessage(query.SystemPrompt),
                     new ChatRequestUserMessage(items)
                 ]
             };
+
+            var disableNucleusSamplingFactor = Environment.GetEnvironmentVariable($"DisableNucleusSamplingFactor_{key}");
+            if (string.IsNullOrEmpty(disableNucleusSamplingFactor) || disableNucleusSamplingFactor != "true")
+            {
+                request.NucleusSamplingFactor = query.TopP;
+            }
 
             try
             {

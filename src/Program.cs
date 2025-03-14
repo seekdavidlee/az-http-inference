@@ -9,8 +9,10 @@ builder.Services.AddCors(options =>
 });
 
 // Add services to the container.
-builder.Services.AddScoped<Inference>();
+builder.Services.AddSingleton<Inference>();
+builder.Services.AddSingleton<ExperimentQueue>();
 builder.Services.AddControllers();
+builder.Services.AddHostedService<ExperimentRunner>();
 
 var baseUrl = Environment.GetEnvironmentVariable("FILE_SYSTEM_URL")!;
 
