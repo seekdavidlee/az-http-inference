@@ -72,7 +72,7 @@ public class Inference(IHttpClientFactory httpClientFactory, ILogger<Inference> 
         if (clients.TryGetValue(key, out var client))
         {
             List<ChatMessageContentItem> items = [];
-            if (query.Text is not null)
+            if (!string.IsNullOrEmpty(query.Text))
             {
                 items.Add(new ChatMessageTextContentItem(query.Text));
             }
