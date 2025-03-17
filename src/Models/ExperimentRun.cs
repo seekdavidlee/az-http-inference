@@ -3,6 +3,12 @@
 public class ExperimentRun
 {
     public Guid Id { get; set; }
+
+    /// <summary>
+    /// Gets or sets the a short description for the experiment run.
+    /// </summary>
+    public string? Description { get; set; }
+
     public Guid ExperimentId { get; set; }
     public Guid ProjectId { get; set; }
 
