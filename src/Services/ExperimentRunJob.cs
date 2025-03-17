@@ -54,6 +54,45 @@ public class ExperimentRunJob(IHttpClientFactory httpClientFactory, Inference in
             return;
         }
 
+        if (experiment.GroundTruthTagFilters is not null && experiment.GroundTruthTagFilters.Length > 0)
+        {
+            foreach (var dsFilePath in datasetFilePaths.Where(x => x.EndsWith(".json")))
+            {
+                try
+                {
+                    var ds = await fileSystemclient.GetFromJsonAsync<GroundTruthImage>($"{route}{dsFilePath}", cancellationToken: stoppingToken);
+                    if (ds is not null && ds.Tags is not null)
+                    {
+                        int count = 0;
+                        // all must match
+                        foreach (var expTag in experiment.GroundTruthTagFilters)
+                        {
+                            count += ds.Tags.Any(x => x.Name == expTag.Name && x.Value == expTag.Value) ? 1 : 0;
+                        }
+
+                        if (count != experiment.GroundTruthTagFilters.Length)
+                        {
+                            var dsImagePath = dsFilePath.Replace(".json", ".jpg");
+                            imageFilePaths = imageFilePaths.Where(p => p != dsImagePath).ToArray();
+                        }
+                    }
+                }
+                catch (HttpRequestException e)
+                {
+                    await LogAsync($"Failed to get ground truth image {dsFilePath} for experiment {experiment.Id}, error: {e}", ExperimentLogLevel.Error);
+                    continue;
+                }
+            }
+
+            if (imageFilePaths.Length == 0)
+            {
+                await LogAsync($"no images left to process for {experiment.Id} after filtering applied", ExperimentLogLevel.Warning, true);
+                experiment.End = DateTime.UtcNow;
+                await CreateOrUpdateAsync(experiment);
+                return;
+            }
+        }
+
         int max = experiment.Iterations * imageFilePaths.Length;
         int progress = 0;
         int errorCount = 0;

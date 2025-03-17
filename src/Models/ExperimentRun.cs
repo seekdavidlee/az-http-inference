@@ -26,6 +26,7 @@ public class ExperimentRun
     public DateTime? Start { get; set; }
     public DateTime? End { get; set; }
     public int Iterations { get; set; }
+    public ExperimentRunGroundTruthTagFilter[]? GroundTruthTagFilters { get; set; }
 }
 
 public enum ExperimentLogLevel
@@ -58,4 +59,24 @@ public class ExperimentRunResult
     public int CompletionTokens { get; set; }
     public int PromptTokens { get; set; }
     public int TotalTokens { get; set; }
+}
+
+public class ExperimentRunGroundTruthTagFilter
+{
+    public string? Name { get; set; }
+
+    public string? Value { get; set; }
+}
+
+public class GroundTruthImage
+{
+    public Guid Id { get; set; }
+    public string? DisplayName { get; set; }
+    public GroundTruthTag[]? Tags { get; set; }
+}
+
+public class GroundTruthTag
+{
+    public string? Name { get; set; }
+    public string? Value { get; set; }
 }

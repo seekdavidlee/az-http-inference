@@ -45,15 +45,16 @@ public class Inference(IHttpClientFactory httpClientFactory, ILogger<Inference> 
             return new Result<QueryResponse>(false, "Either Text or ImageId or ImageRouteId must be provided", default);
         }
 
-
+        string imgInfo;
         BinaryData imageData;
         if (query.ImageId is not null || query.ImageRouteId is not null)
         {
+            imgInfo = query.ImageRouteId is not null ? $"{route_no_path}{query.ImageRouteId}" : $"{route}/{query.ImageId}";
             // pull image from storage
             var http = httpClientFactory.CreateClient(Constants.FileSystemClient);
             try
             {
-                var bytes = await http.GetByteArrayAsync(query.ImageRouteId is not null ? $"{route_no_path}{query.ImageRouteId}" : $"{route}/{query.ImageId}");
+                var bytes = await http.GetByteArrayAsync(imgInfo);
                 imageData = BinaryData.FromBytes(bytes);
             }
             catch (Exception e)
@@ -64,6 +65,7 @@ public class Inference(IHttpClientFactory httpClientFactory, ILogger<Inference> 
         }
         else
         {
+            imgInfo = "from query text";
             imageData = BinaryData.FromString(query.Text!);
         }
 
@@ -93,6 +95,7 @@ public class Inference(IHttpClientFactory httpClientFactory, ILogger<Inference> 
                 request.NucleusSamplingFactor = query.TopP;
             }
 
+            logger.LogInformation($"processing image: {imgInfo}", imgInfo);
             try
             {
                 Stopwatch stopwatch = new();
