@@ -1,5 +1,4 @@
 ﻿using HttpInference.Models;
-using System.Diagnostics;
 
 namespace HttpInference.Services;
 
@@ -102,7 +101,7 @@ public class ExperimentRunJob(IHttpClientFactory httpClientFactory, Inference in
             {
                 try
                 {
-                    var result = await inference.QueryAsync(experiment.ModelId!, new Query(default, imageFilePath, experiment.UserPrompt, experiment.SystemPrompt, experiment.Temperature, experiment.MaxTokens, experiment.TopP));
+                    var result = await inference.QueryAsync(experiment.ModelId!, new Query(default, imageFilePath, experiment.UserPrompt, experiment.SystemPrompt, experiment.Temperature, experiment.MaxTokens, experiment.TopP, experiment.ExpectJsonOutput));
 
                     if (!result.Success)
                     {

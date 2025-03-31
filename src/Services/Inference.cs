@@ -3,11 +3,13 @@ using Azure.AI.Inference;
 using HttpInference.Models;
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Text.Json;
 
 namespace HttpInference.Services;
 
 public class Inference(IHttpClientFactory httpClientFactory, ILogger<Inference> logger)
 {
+    private readonly int maxRetry = int.TryParse(Environment.GetEnvironmentVariable("MAX_INFERENCE_RETRY"), out var retryVal) ? retryVal : 3;
     private readonly string route = $"{Environment.GetEnvironmentVariable("FILE_SYSTEM_API")!}/storage/files/object?path={Environment.GetEnvironmentVariable("FILE_SYSTEM_PATH")!}";
     private readonly string route_no_path = $"{Environment.GetEnvironmentVariable("FILE_SYSTEM_API")!}/storage/files/object?path=";
     private const string KEY_PREFIX = "AZKEY_";
@@ -95,20 +97,42 @@ public class Inference(IHttpClientFactory httpClientFactory, ILogger<Inference> 
                 request.NucleusSamplingFactor = query.TopP;
             }
 
-            logger.LogInformation($"processing image: {imgInfo}", imgInfo);
-            try
+            int retry = 0;
+            while (true)
             {
-                Stopwatch stopwatch = new();
-                stopwatch.Start();
-                var response = await client.CompleteAsync(request);
-                stopwatch.Stop();
+                logger.LogInformation("processing image: {imgInfo}, attempt: {attempt}", imgInfo, retry + 1);
+                try
+                {
+                    Stopwatch stopwatch = new();
+                    stopwatch.Start();
+                    var response = await client.CompleteAsync(request);
+                    stopwatch.Stop();
 
-                var queryResponse = new QueryResponse(response.Value.Content, stopwatch.ElapsedMilliseconds, response.Value.Usage);
-                return new Result<QueryResponse>(true, null, queryResponse);
-            }
-            catch (Exception e)
-            {
-                return new Result<QueryResponse>(false, e.ToString(), default);
+                    if (query.ExpectJson == true)
+                    {
+                        // test to see if an exception is thrown
+                        var doc = JsonSerializer.Deserialize<JsonDocument>(response.Value.Content);
+                        logger.LogDebug("doc: {doc}", doc);
+                    }
+
+                    var queryResponse = new QueryResponse(response.Value.Content, stopwatch.ElapsedMilliseconds, response.Value.Usage);
+                    return new Result<QueryResponse>(true, null, queryResponse);
+                }
+                catch (Exception e)
+                {
+                    if (retry == maxRetry - 1)
+                    {
+                        return new Result<QueryResponse>(false, e.ToString(), default);
+                    }
+                    else
+                    {
+                        logger.LogError(e, "error processing image {imgInfo}", imgInfo);
+                    }
+                }
+                finally
+                {
+                    retry++;
+                }
             }
         }
         return new Result<QueryResponse>(false, "Invalid key", default);
