@@ -33,6 +33,8 @@ public class ExperimentRun
     public DateTime? End { get; set; }
     public int Iterations { get; set; }
     public ExperimentRunGroundTruthTagFilter[]? GroundTruthTagFilters { get; set; }
+
+    public bool? ExpectJsonOutput { get; set; }
 }
 
 public enum ExperimentLogLevel
