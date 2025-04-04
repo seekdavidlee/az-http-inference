@@ -115,6 +115,11 @@ public class Inference(IHttpClientFactory httpClientFactory, ILogger<Inference> 
                         logger.LogDebug("doc: {doc}", doc);
                     }
 
+                    if (retry > 0)
+                    {
+                        logger.LogInformation("recovered from failed attempt: {imgInfo}", imgInfo);
+                    }
+
                     var queryResponse = new QueryResponse(response.Value.Content, stopwatch.ElapsedMilliseconds, response.Value.Usage);
                     return new Result<QueryResponse>(true, null, queryResponse);
                 }
@@ -127,6 +132,7 @@ public class Inference(IHttpClientFactory httpClientFactory, ILogger<Inference> 
                     else
                     {
                         logger.LogError(e, "error processing image {imgInfo}", imgInfo);
+                        await Task.Delay(TimeSpan.FromMilliseconds(retry * 250));
                     }
                 }
                 finally
