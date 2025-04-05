@@ -10,6 +10,7 @@ namespace HttpInference.Services;
 public class Inference(IHttpClientFactory httpClientFactory, ILogger<Inference> logger)
 {
     private readonly int maxRetry = int.TryParse(Environment.GetEnvironmentVariable("MAX_INFERENCE_RETRY"), out var retryVal) ? retryVal : 3;
+    private readonly int retryIntervalInMilliseconds = int.TryParse(Environment.GetEnvironmentVariable("INFERENCE_RETRY_INTERVAL_IN_MILLISECONDS"), out var retryIntervalVal) && retryIntervalVal > 100 ? retryIntervalVal : 250;
     private readonly string route = $"{Environment.GetEnvironmentVariable("FILE_SYSTEM_API")!}/storage/files/object?path={Environment.GetEnvironmentVariable("FILE_SYSTEM_PATH")!}";
     private readonly string route_no_path = $"{Environment.GetEnvironmentVariable("FILE_SYSTEM_API")!}/storage/files/object?path=";
     private const string KEY_PREFIX = "AZKEY_";
@@ -132,7 +133,7 @@ public class Inference(IHttpClientFactory httpClientFactory, ILogger<Inference> 
                     else
                     {
                         logger.LogError(e, "error processing image {imgInfo}", imgInfo);
-                        await Task.Delay(TimeSpan.FromMilliseconds(retry * 250));
+                        await Task.Delay(TimeSpan.FromMilliseconds(retry * retryIntervalInMilliseconds));
                     }
                 }
                 finally
