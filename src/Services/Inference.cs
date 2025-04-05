@@ -102,6 +102,7 @@ public class Inference(IHttpClientFactory httpClientFactory, ILogger<Inference> 
             while (true)
             {
                 logger.LogInformation("processing image: {imgInfo}, attempt: {attempt}", imgInfo, retry + 1);
+                string contentBody = string.Empty;
                 try
                 {
                     Stopwatch stopwatch = new();
@@ -109,10 +110,11 @@ public class Inference(IHttpClientFactory httpClientFactory, ILogger<Inference> 
                     var response = await client.CompleteAsync(request);
                     stopwatch.Stop();
 
+                    contentBody = response.Value.Content;
                     if (query.ExpectJson == true)
                     {
                         // test to see if an exception is thrown
-                        var doc = JsonSerializer.Deserialize<JsonDocument>(response.Value.Content);
+                        var doc = JsonSerializer.Deserialize<JsonDocument>(contentBody);
                         logger.LogDebug("doc: {doc}", doc);
                     }
 
@@ -128,11 +130,11 @@ public class Inference(IHttpClientFactory httpClientFactory, ILogger<Inference> 
                 {
                     if (retry == maxRetry - 1)
                     {
-                        return new Result<QueryResponse>(false, e.ToString(), default);
+                        return new Result<QueryResponse>(false, $"error: {e}, content-body: {contentBody}", default);
                     }
                     else
                     {
-                        logger.LogError(e, "error processing image {imgInfo}", imgInfo);
+                        logger.LogError(e, "error processing image {imgInfo}, body: {contentBody}", imgInfo, contentBody);
                         await Task.Delay(TimeSpan.FromMilliseconds(retry * retryIntervalInMilliseconds));
                     }
                 }

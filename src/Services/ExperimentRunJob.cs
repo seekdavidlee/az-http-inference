@@ -133,7 +133,7 @@ public class ExperimentRunJob(IHttpClientFactory httpClientFactory, Inference in
                 catch (Exception ex)
                 {
                     errorCount++;
-                    await LogAsync($"failed to inference image {imageFilePath} at iteration {i}, error: {ex}", ExperimentLogLevel.Error);
+                    await LogAsync($"an unhandled exception occured: inference image {imageFilePath} at iteration {i}, error: {ex}", ExperimentLogLevel.Error);
                 }
 
                 progress++;
