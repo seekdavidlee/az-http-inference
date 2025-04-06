@@ -113,6 +113,10 @@ public class Inference(IHttpClientFactory httpClientFactory, ILogger<Inference> 
                     contentBody = response.Value.Content;
                     if (query.ExpectJson == true)
                     {
+                        if (contentBody.StartsWith("```json") && contentBody.EndsWith("```"))
+                        {
+                            contentBody = contentBody[7..^3].Trim();
+                        }
                         // test to see if an exception is thrown
                         var doc = JsonSerializer.Deserialize<JsonDocument>(contentBody);
                         logger.LogDebug("doc: {doc}", doc);
