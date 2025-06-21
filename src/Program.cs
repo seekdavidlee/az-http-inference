@@ -1,6 +1,9 @@
 using HttpInference;
 using HttpInference.Services;
 
+// Validate configuration before starting the application
+ConfigurationValidator.ValidateEnvironmentVariables();
+
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddCors(options =>
@@ -14,7 +17,7 @@ builder.Services.AddSingleton<ExperimentQueue>();
 builder.Services.AddControllers();
 builder.Services.AddHostedService<ExperimentRunner>();
 
-var baseUrl = Environment.GetEnvironmentVariable("FILE_SYSTEM_URL")!;
+var baseUrl = Environment.GetEnvironmentVariable(Constants.EnvironmentVariables.FileSystemUrl)!;
 
 builder.Services.AddHttpClient(nameof(Constants.FileSystemClient), client =>
 {
@@ -22,7 +25,7 @@ builder.Services.AddHttpClient(nameof(Constants.FileSystemClient), client =>
     client.Timeout = TimeSpan.FromMinutes(8);
 });
 
-var apiListenPortStr = Environment.GetEnvironmentVariable("API_LISTEN_PORT");
+var apiListenPortStr = Environment.GetEnvironmentVariable(Constants.EnvironmentVariables.ApiListenPort);
 if (apiListenPortStr is not null && int.TryParse(apiListenPortStr, out var apiListenPort))
 {
     builder.WebHost.ConfigureKestrel(serverOptions =>

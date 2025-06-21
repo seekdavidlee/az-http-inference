@@ -4,8 +4,8 @@ namespace HttpInference.Services;
 
 public class ExperimentRunJob(IHttpClientFactory httpClientFactory, Inference inference, ExperimentRun experiment, ILogger<ExperimentRunner> logger, CancellationToken stoppingToken)
 {
-    private readonly HttpClient fileSystemclient = httpClientFactory.CreateClient(Constants.FileSystemClient);
-    private readonly string route = $"{Environment.GetEnvironmentVariable("FILE_SYSTEM_API")!}/storage/files/object?path=";
+    private readonly HttpClient fileSystemClient = httpClientFactory.CreateClient(Constants.FileSystemClient);
+    private readonly string route = $"{Environment.GetEnvironmentVariable(Constants.EnvironmentVariables.FileSystemApi)!}/storage/files/object?path=";
 
     public async Task RunAsync()
     {
@@ -35,7 +35,7 @@ public class ExperimentRunJob(IHttpClientFactory httpClientFactory, Inference in
             return;
         }
 
-        var datasetFilePaths = await fileSystemclient.GetFromJsonAsync<string[]>(experiment.DataSetFileSystemApiPath, cancellationToken: stoppingToken);
+        var datasetFilePaths = await fileSystemClient.GetFromJsonAsync<string[]>(experiment.DataSetFileSystemApiPath, cancellationToken: stoppingToken);
         if (datasetFilePaths is null || datasetFilePaths.Length == 0)
         {
             await LogAsync($"Failed to get dataset file paths for experiment {experiment.Id}", ExperimentLogLevel.Error, true);
@@ -59,7 +59,7 @@ public class ExperimentRunJob(IHttpClientFactory httpClientFactory, Inference in
             {
                 try
                 {
-                    var ds = await fileSystemclient.GetFromJsonAsync<GroundTruthImage>($"{route}{dsFilePath}", cancellationToken: stoppingToken);
+                    var ds = await fileSystemClient.GetFromJsonAsync<GroundTruthImage>($"{route}{dsFilePath}", cancellationToken: stoppingToken);
                     if (ds is not null && ds.Tags is not null)
                     {
                         int count = 0;
@@ -133,7 +133,7 @@ public class ExperimentRunJob(IHttpClientFactory httpClientFactory, Inference in
                 catch (Exception ex)
                 {
                     errorCount++;
-                    await LogAsync($"an unhandled exception occured: inference image {imageFilePath} at iteration {i}, error: {ex}", ExperimentLogLevel.Error);
+                    await LogAsync($"an unhandled exception occurred: inference image {imageFilePath} at iteration {i}, error: {ex}", ExperimentLogLevel.Error);
                 }
 
                 progress++;
@@ -159,7 +159,7 @@ public class ExperimentRunJob(IHttpClientFactory httpClientFactory, Inference in
         try
         {
             var timestampFileName = DateTime.UtcNow.Ticks;
-            await fileSystemclient.PutAsJsonAsync($"{route}{experiment.OutputFileSystemApiPath}/{experiment.Id}/results/{timestampFileName}.json", runResult);
+            await fileSystemClient.PutAsJsonAsync($"{route}{experiment.OutputFileSystemApiPath}/{experiment.Id}/results/{timestampFileName}.json", runResult);
         }
         catch (Exception ex)
         {
@@ -172,7 +172,7 @@ public class ExperimentRunJob(IHttpClientFactory httpClientFactory, Inference in
         try
         {
             var timestampFileName = DateTime.UtcNow.Ticks;
-            await fileSystemclient.PutAsJsonAsync($"{route}{experiment.OutputFileSystemApiPath}/{experiment.Id}/metrics/{timestampFileName}.json", new ExperimentMetric
+            await fileSystemClient.PutAsJsonAsync($"{route}{experiment.OutputFileSystemApiPath}/{experiment.Id}/metrics/{timestampFileName}.json", new ExperimentMetric
             {
                 ResultId = resultId,
                 Name = metricName,
@@ -190,7 +190,7 @@ public class ExperimentRunJob(IHttpClientFactory httpClientFactory, Inference in
     {
         try
         {
-            await fileSystemclient.PutAsJsonAsync($"{route}{experiment.OutputFileSystemApiPath}/{experiment.Id}/run.json", experimentRun);
+            await fileSystemClient.PutAsJsonAsync($"{route}{experiment.OutputFileSystemApiPath}/{experiment.Id}/run.json", experimentRun);
         }
         catch (Exception e)
         {
@@ -203,7 +203,7 @@ public class ExperimentRunJob(IHttpClientFactory httpClientFactory, Inference in
         try
         {
             var timestampFileName = DateTime.UtcNow.Ticks;
-            await fileSystemclient.PutAsJsonAsync($"{route}{experiment.OutputFileSystemApiPath}/{experiment.Id}/logs/{timestampFileName}.json", new ExperimentLog
+            await fileSystemClient.PutAsJsonAsync($"{route}{experiment.OutputFileSystemApiPath}/{experiment.Id}/logs/{timestampFileName}.json", new ExperimentLog
             {
                 Level = level,
                 Message = message,

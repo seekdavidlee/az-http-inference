@@ -9,11 +9,11 @@ namespace HttpInference.Services;
 
 public class Inference(IHttpClientFactory httpClientFactory, ILogger<Inference> logger)
 {
-    private readonly int maxRetry = int.TryParse(Environment.GetEnvironmentVariable("MAX_INFERENCE_RETRY"), out var retryVal) ? retryVal : 3;
-    private readonly int retryIntervalInMilliseconds = int.TryParse(Environment.GetEnvironmentVariable("INFERENCE_RETRY_INTERVAL_IN_MILLISECONDS"), out var retryIntervalVal) && retryIntervalVal > 100 ? retryIntervalVal : 250;
-    private readonly string route = $"{Environment.GetEnvironmentVariable("FILE_SYSTEM_API")!}/storage/files/object?path={Environment.GetEnvironmentVariable("FILE_SYSTEM_PATH")!}";
-    private readonly string route_no_path = $"{Environment.GetEnvironmentVariable("FILE_SYSTEM_API")!}/storage/files/object?path=";
-    private const string KEY_PREFIX = "AZKEY_";
+    private readonly int maxRetry = int.TryParse(Environment.GetEnvironmentVariable(Constants.EnvironmentVariables.MaxInferenceRetry), out var retryVal) ? retryVal : 3;
+    private readonly int retryIntervalInMilliseconds = int.TryParse(Environment.GetEnvironmentVariable(Constants.EnvironmentVariables.InferenceRetryIntervalInMilliseconds), out var retryIntervalVal) && retryIntervalVal > 100 ? retryIntervalVal : 250;
+    private readonly string route = $"{Environment.GetEnvironmentVariable(Constants.EnvironmentVariables.FileSystemApi)!}/storage/files/object?path={Environment.GetEnvironmentVariable(Constants.EnvironmentVariables.FileSystemPath)!}";
+    private readonly string route_no_path = $"{Environment.GetEnvironmentVariable(Constants.EnvironmentVariables.FileSystemApi)!}/storage/files/object?path=";
+    private const string KEY_PREFIX = Constants.EnvironmentVariables.AzKeyPrefix;
     private static readonly ConcurrentDictionary<string, ChatCompletionsClient> clients = [];
     static Inference()
     {
@@ -30,15 +30,14 @@ public class Inference(IHttpClientFactory httpClientFactory, ILogger<Inference> 
             }
         }
     }
-
     private static string[] GetEnvKeys()
     {
-        return Environment.GetEnvironmentVariables().Keys.Cast<string>().Where(k => k.StartsWith("AZKEY_")).ToArray();
+        return [.. Environment.GetEnvironmentVariables().Keys.Cast<string>().Where(k => k.StartsWith(Constants.EnvironmentVariables.AzKeyPrefix))];
     }
 
     public string[] GetKeys()
     {
-        return GetEnvKeys().Select(x => x[KEY_PREFIX.Length..]).ToArray();
+        return [.. GetEnvKeys().Select(x => x[KEY_PREFIX.Length..])];
     }
 
     public async Task<Result<QueryResponse>> QueryAsync(string key, Query query)
@@ -92,7 +91,7 @@ public class Inference(IHttpClientFactory httpClientFactory, ILogger<Inference> 
                 ]
             };
 
-            var disableNucleusSamplingFactor = Environment.GetEnvironmentVariable($"DisableNucleusSamplingFactor_{key}");
+            var disableNucleusSamplingFactor = Environment.GetEnvironmentVariable($"{Constants.EnvironmentVariables.DisableNucleusSamplingFactorPrefix}{key}");
             if (string.IsNullOrEmpty(disableNucleusSamplingFactor) || disableNucleusSamplingFactor != "true")
             {
                 request.NucleusSamplingFactor = query.TopP;

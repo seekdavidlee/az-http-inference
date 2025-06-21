@@ -1,16 +1,17 @@
-﻿namespace HttpInference.Services;
+﻿using HttpInference;
+
+namespace HttpInference.Services;
 
 public class ExperimentRunner(IHttpClientFactory httpClientFactory, Inference inference, ExperimentQueue experimentQueue, ILogger<ExperimentRunner> logger) : BackgroundService
 {
     private const int INTERNAL_MAX_PARALLEL_EXPERIMENTS = 3;// Limit to 3 concurrent tasks
     private const int INTERNAL_POLLING_INTERVAL_SECONDS = 1;
-
-    private readonly SemaphoreSlim semaphore = new(int.TryParse(Environment.GetEnvironmentVariable("MAX_PARALLEL_EXPERIMENTS"),
+    private readonly SemaphoreSlim semaphore = new(int.TryParse(Environment.GetEnvironmentVariable(Constants.EnvironmentVariables.MaxParallelExperiments),
         out var max) ? max : INTERNAL_MAX_PARALLEL_EXPERIMENTS);
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        TimeSpan pollingInterval = TimeSpan.FromSeconds(int.TryParse(Environment.GetEnvironmentVariable("POLLING_INTERVAL_SECONDS"),
+        TimeSpan pollingInterval = TimeSpan.FromSeconds(int.TryParse(Environment.GetEnvironmentVariable(Constants.EnvironmentVariables.PollingIntervalSeconds),
             out var pollingIntervalValue) ? pollingIntervalValue : INTERNAL_POLLING_INTERVAL_SECONDS);
 
         var runningTasks = new List<Task>();
